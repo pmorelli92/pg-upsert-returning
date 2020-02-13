@@ -1,0 +1,3 @@
+CREATE DATABASE customer_svc;
+CREATE TABLE customers(id SERIAL, customer_id UUID NOT NULL PRIMARY KEY);
+
