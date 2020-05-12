@@ -41,20 +41,11 @@ func (repo *pgCustomerRepo) UpsertCustomerCte(ctx context.Context, id uuid.UUID)
 func (repo *pgCustomerRepo) UpsertCustomerDoNothing(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error) {
 	query :=
 		"INSERT INTO customers(customer_id)	VALUES($1) ON CONFLICT DO NOTHING;" +
-			"SELECT id FROM customers WHERE customer_id = $1"
+			"SELECT ctid, xmax, id FROM customers WHERE customer_id = $1"
 
 	query = strings.ReplaceAll(query, "$1", fmt.Sprintf("'%s'", id.String()))
-
-	row, err := repo.dbHandler.QueryContext(ctx, query)
-	if err != nil {
-		return res, err
-	}
-
-	if !row.Next() {
-		err = row.Scan(&res.CTID, &res.XMAX, &res.ID)
-	}
-
-	//err = row.Scan(&res.CTID, &res.XMAX, &res.ID)
+	row := repo.dbHandler.QueryRowContext(ctx, query)
+	err = row.Scan(&res.CTID, &res.XMAX, &res.ID)
 	return
 }
 
@@ -79,7 +70,7 @@ func (repo *pgCustomerRepo) UpsertCustomerLock(ctx context.Context, id uuid.UUID
 	err = r.Scan(&res.CTID, &res.XMAX, &res.ID)
 
 	if err != nil && err == sql.ErrNoRows {
-		q := "INSERT INTO customers(customer_id) VALUES($1) ON CONFLICT (customer_id) DO NOTHING RETURNING ctid, xmax, id"
+		q := "INSERT INTO customers(customer_id) VALUES($1) RETURNING ctid, xmax, id"
 		row := tx.QueryRowContext(ctx, q, id)
 		err = row.Scan(&res.CTID, &res.XMAX, &res.ID)
 	}
