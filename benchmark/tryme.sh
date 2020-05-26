@@ -41,3 +41,12 @@ echo "EXECUTING FOR UPSERT CTE"
 jq -ncM "$UPSERT_CTE" \
  | vegeta attack -format=json -duration=40s -connections=20 -rate=100 | vegeta encode \
  | vegeta report -type="hist[0,2ms,4ms,6ms,8ms,10ms,15ms]"
+
+UPSERT_CTE_RANDOM='{
+  method: "POST",
+  url: "http://app:8080/upsert-cte-random"
+}'
+echo "EXECUTING FOR UPSERT CTE RANDOM"
+jq -ncM "$UPSERT_CTE_RANDOM" \
+ | vegeta attack -format=json -duration=40s -connections=20 -rate=100 | vegeta encode \
+ | vegeta report -type="hist[0,2ms,4ms,6ms,8ms,10ms,15ms]"
