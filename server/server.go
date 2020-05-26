@@ -78,60 +78,6 @@ func (s *Server) UpsertCustomer(repoUpsert func(ctx context.Context, id uuid.UUI
 	}
 }
 
-func (s *Server) UpsertCustomer(repoUpsert func(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		type upsertRequest struct {
-			ID uuid.UUID `json:"id"`
-		}
-		type upsertResponse struct {
-			IntID   int    `json:"intID"`
-			CTID    string `json:"CTID"`
-			XMAX    int    `json:"XMAX"`
-			Elapsed int64  `json:"elapsedMilliseconds"`
-		}
-
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-
-		bytes, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		var rq upsertRequest
-		err = json.Unmarshal(bytes, &rq)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		// Call the repo
-		start := time.Now()
-		upserted, err := repoUpsert(r.Context(), rq.ID)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println(err)
-			return
-		}
-		t := time.Now()
-		elapsed := t.Sub(start)
-
-		respBody, err := json.Marshal(upsertResponse{upserted.ID, upserted.CTID, upserted.XMAX, elapsed.Milliseconds()})
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println(err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		_, _ = w.Write(respBody)
-	}
-}
-
 func (s *Server) UpsertCustomerRandom(repoUpsert func(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type upsertResponse struct {
