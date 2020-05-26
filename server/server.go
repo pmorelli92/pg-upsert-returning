@@ -92,7 +92,7 @@ func (s *Server) UpsertCustomerRandom(repoUpsert func(ctx context.Context, id uu
 			return
 		}
 
-		// Call the repo
+		// Call the repo generating a random UUID for each time
 		start := time.Now()
 		upserted, err := repoUpsert(r.Context(), uuid.New())
 		if err != nil {
