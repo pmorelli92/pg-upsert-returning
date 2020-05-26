@@ -63,6 +63,11 @@ func (repo *pgCustomerRepo) UpsertCustomerDoNothing(ctx context.Context, id uuid
 	}
 
 	err = results.QueryRow().Scan(&res.CTID, &res.XMAX, &res.ID)
+	if err != nil {
+		return
+	}
+
+	err = results.Close()
 	return
 }
 
