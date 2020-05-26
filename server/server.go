@@ -77,9 +77,49 @@ func (s *Server) UpsertCustomer(repoUpsert func(ctx context.Context, id uuid.UUI
 	}
 }
 
+func (s *Server) UpsertCustomerRandom(repoUpsert func(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type upsertResponse struct {
+			IntID   int    `json:"intID"`
+			CTID    string `json:"CTID"`
+			XMAX    int    `json:"XMAX"`
+			Elapsed int64  `json:"elapsedMilliseconds"`
+		}
+
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Call the repo
+		start := time.Now()
+		upserted, err := repoUpsert(r.Context(), uuid.New())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println(err)
+			return
+		}
+
+		t := time.Now()
+		elapsed := t.Sub(start)
+
+		respBody, err := json.Marshal(upsertResponse{upserted.ID, upserted.CTID, upserted.XMAX, elapsed.Milliseconds()})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println(err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		_, _ = w.Write(respBody)
+	}
+}
+
 func (s *Server) ListenAndServe() error {
 	routes := http.NewServeMux()
 	routes.HandleFunc("/upsert-cte", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerCte))
+	routes.HandleFunc("/upsert-cte-random", s.UpsertCustomerRandom(s.CustomerRepo.UpsertCustomerCte))
 	routes.HandleFunc("/upsert-lock", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerLock))
 	routes.HandleFunc("/upsert-conflict", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerConflict))
 	fmt.Println("Server UP")
