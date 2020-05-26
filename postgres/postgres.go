@@ -50,6 +50,22 @@ func (repo *pgCustomerRepo) UpsertCustomerCte(ctx context.Context, id uuid.UUID)
 	return
 }
 
+func (repo *pgCustomerRepo) UpsertCustomerDoNothing(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error) {
+
+	batch := &pgx.Batch{}
+	batch.Queue("INSERT INTO customers(customer_id) VALUES($1) ON CONFLICT DO NOTHING", id)
+	batch.Queue("SELECT ctid, xmax, id FROM customers WHERE customer_id = $1", id)
+	results := repo.dbHandler.SendBatch(ctx, batch)
+
+	_, err = results.Exec()
+	if err != nil {
+		return
+	}
+
+	err = results.QueryRow().Scan(&res.CTID, &res.XMAX, &res.ID)
+	return
+}
+
 func hash(s string) int64 {
 	h := fnv.New64a()
 	h.Write([]byte(s))
