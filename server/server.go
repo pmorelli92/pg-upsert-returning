@@ -16,7 +16,6 @@ type customerRepository interface {
 	UpsertCustomerCte(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)
 	UpsertCustomerLock(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)
 	UpsertCustomerConflict(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)
-	UpsertCustomerDoNothing(ctx context.Context, id uuid.UUID) (res domain.UpsertedRow, err error)
 }
 
 type Server struct {
@@ -83,7 +82,6 @@ func (s *Server) ListenAndServe() error {
 	routes.HandleFunc("/upsert-cte", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerCte))
 	routes.HandleFunc("/upsert-lock", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerLock))
 	routes.HandleFunc("/upsert-conflict", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerConflict))
-	routes.HandleFunc("/upsert-donothing", s.UpsertCustomer(s.CustomerRepo.UpsertCustomerDoNothing))
 	fmt.Println("Server UP")
 	return http.ListenAndServe(s.HttpAddr, routes)
 }
